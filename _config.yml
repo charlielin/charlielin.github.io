@@ -3,7 +3,7 @@ title: CharlieLin's Blog
 SEOTitle: 美丽的博客 | CharlieLin's Blog
 header-img: img/post-bg-desk.jpg
 email: charlielin06@gmail.com
-description: "Every failure is leading towards success."
+description: "Speak in such a way that others love to listen to you. Listen in such a way that others love to speak to you."
 keyword: "CharlieLin 美丽的博客"
 url: "http://charlielin.github.io"          # your host, for absolute URL
 baseurl: ""      # for example, '/blog' if your blog hosted on 'host/blog'
@@ -19,7 +19,7 @@ sidebar-avatar: /img/about-BY-gentle.jpg      # use absolute URL, seeing it's us
 # SNS settings
 RSS: false
 # weibo_username:     qiubaiying
-github_username:    charlielin 
+github_username:    charlielin
 #facebook_username:  baiying.qiu.7
 twitter_username:   CharlieLin6
 

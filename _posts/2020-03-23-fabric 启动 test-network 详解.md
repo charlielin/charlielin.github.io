@@ -1,13 +1,13 @@
 ---
 layout:     post
-title:      fabric 启动 test-network 详解
+title:      fabric 启动 test-network  梳理
 date:       2020-03-23
 author:     Charlie Lin
 catalog:    true
 tags:
     - sed
 ---
-# fabric 启动 test-network 详解
+# fabric 启动 test-network 梳理
 
 ## 检查依赖
 检查 peer、docker、docker-compose 版本等

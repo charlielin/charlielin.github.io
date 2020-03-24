@@ -5,7 +5,7 @@ date:       2020-03-23
 author:     Charlie Lin
 catalog:    true
 tags:
-    - sed
+    - hyperledger/fabric
 ---
 # fabric 启动 test-network 梳理
 

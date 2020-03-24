@@ -10,12 +10,15 @@ tags:
 [toc]
 
 # fabric 启动 test-network 详解
+
 ## 检查依赖
 检查 peer、docker、docker-compose 版本等
+
 ## 创建组织
 由于 fabric 是一个联盟链（许可链），因而链上的每一个用户都要属于一个组织，每个用户都需要证书与密钥来签名并验证账户。因而在启动前每个组织都需要生成加密材料来验证自己的身份。  
 默认使用`cryptogen`工具来创建证书与密钥。`cryptogen` 使用 `organizations/cryptogen` 目录下的配置文件来生成证书与密钥。
 同样也可以使用`Fabric CAs`来创建证书。配置文件位于 `organizations/fabric-ca` 目录下。
+
 ### 使用 cryptogen 创建组织加密材料
 命令：
 ```shell

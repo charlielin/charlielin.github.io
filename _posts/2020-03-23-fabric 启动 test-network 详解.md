@@ -114,8 +114,10 @@ OrdererOrgs:
 ## 创建创世区块（Genesis Block）
  在创建组织加密材料之后，需要创建排序系统 channel 的创世纪区块。该区块是启动其他排序节点与其他应用 channel 所必须的。
 使用 `configtxgen` 命令来创建创世区块。该命令的配置文件为 `configtx.yaml`。创世区块是由配置文件末尾的 `TwoOrgsOrdererGenesis` 定义的。该文件还定义了一个 `SampleConsortium`，由两个 peer 组织所组成。该 consortium 定义了哪个组织可以被识别为 test-network 的成员。 peer 和 orderer 组织定义在配置文件顶部的 `Profiles` 块中，定义了每一个成员的 MSP 的目录位置。MSP 用来创建 MSP channel，其定义了每一个组织的根信任。本质上说，MSP channel 允许 nodes 和用户被识别为 test-network 的成员。该配置文件同样定义了每一个 peer 组织的 anchor peers。
-> anchor peer:
-> Used by gossip to make sure peers in different organizations know about each other.
+
+> anchor peer:  
+> Used by gossip to make sure peers in different organizations know about each other.  
+
 
 ### 使用 configtxgen 命令来创建创世区块
 命令：

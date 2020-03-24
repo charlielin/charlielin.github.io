@@ -7,8 +7,6 @@ catalog:    true
 tags:
     - sed
 ---
-[toc]
-
 # fabric 启动 test-network 详解
 
 ## 检查依赖

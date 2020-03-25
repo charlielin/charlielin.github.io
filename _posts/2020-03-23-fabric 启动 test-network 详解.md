@@ -601,3 +601,102 @@ services:
 * 定义服务 orderer.example.com，绑定并监听 7050 端口，映射 genesis.block、msp、tls 到容器内的 /var/hyperleger
 * 定义服务 peer0.org1.example.com，绑定并监听 7051 与 7052 端口，映射 msp、tls 到 /etc/hyperledger/fabric
 * 其他 peer 类似
+
+## 创建 channel
+调用默认的创建 channel 脚本。
+```shell
+scripts/createChannel.sh $CHANNEL_NAME $CLI_DELAY $MAX_RETRY $VERBOSE
+```
+createChannel.sh 的内容由以下部分组成。
+
+### createChannelTx
+```shell
+configtxgen -profile TwoOrgsChannel -outputCreateChannelTx ./channel-artifacts/${CHANNEL_NAME}.tx -channelID $CHANNEL_NAME -configPath=./configtx
+```
+输出文件：`./channel-artifacts/${CHANNEL_NAME}.tx`
+使用 `configtxgen` 命令生成一个 create channel configure transaction，输出 tx 文件。配置文件为 `./configtx/configtx.yaml`。
+
+#### createAnchorPeerTx
+```shell
+orgmsp=Org1MSP; configtxgen -profile TwoOrgsChannel -outputAnchorPeersUpdate ./channel-artifacts/${orgmsp}anchors.tx -channelID $CHANNEL_NAME -asOrg ${orgmsp} -configPath=./configtx
+orgmsp=Org2MSP; configtxgen -profile TwoOrgsChannel -outputAnchorPeersUpdate ./channel-artifacts/${orgmsp}anchors.tx -channelID $CHANNEL_NAME -asOrg ${orgmsp} -configPath=./configtx
+```
+输出文件：
+```output
+./channel-artifacts/Org1MSPanchors.tx
+./channel-artifacts/Org2MSPanchors.tx
+```
+使用 `configtxgen` 命令生成一个 create anchor peer configure transaction，输出 tx 文件。配置文件为 `./configtx/configtx.yaml`。
+
+### createChannel
+```shell
+export FABRIC_CFG_PATH=/home/fabric/fabric/fabric-samples/test-network/../config/;
+
+# setGlobals 1
+export CORE_PEER_LOCALMSPID="Org1MSP"
+export CORE_PEER_TLS_ROOTCERT_FILE=./organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=./organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+export CORE_PEER_ADDRESS=localhost:7051
+
+peer channel create -o localhost:7050 -c ${CHANNEL_NAME} --ordererTLSHostnameOverride orderer.example.com -f ./channel-artifacts/${CHANNEL_NAME}.tx --outputBlock ./channel-artifacts/${CHANNEL_NAME}.block --tls true --cafile /home/fabric/fabric/fabric-samples/test-network/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
+```
+使用 `peer` 工具，创建 channel。连接 orderer 节点，使用之前 createChannelTx 生成的 channel 配置文件。输出 block 文件到本地。过程中使用 orderer 节点的 ca 文件。
+
+### joinChannel
+```shell
+export FABRIC_CFG_PATH=/home/fabric/fabric/fabric-samples/test-network/../config/;
+
+# setGlobals 1
+export CORE_PEER_LOCALMSPID="Org1MSP"
+export CORE_PEER_TLS_ROOTCERT_FILE=./organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=./organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+export CORE_PEER_ADDRESS=localhost:7051
+peer channel join -b ./channel-artifacts/${CHANNEL_NAME}.block 
+
+# setGlobals 2
+export CORE_PEER_LOCALMSPID="Org2MSP"
+export CORE_PEER_TLS_ROOTCERT_FILE=./organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=./organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp
+export CORE_PEER_ADDRESS=localhost:9051
+peer channel join -b ./channel-artifacts/${CHANNEL_NAME}.block 
+```
+
+分别在两个组织的环境下，调用 `peer channel join` 命令，将上一步生成的 block 文件加入到 channel。
+
+### updateAnchorPeers
+```shell
+# setGlobals 1
+export CORE_PEER_LOCALMSPID="Org1MSP"
+export CORE_PEER_TLS_ROOTCERT_FILE=./organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=./organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
+export CORE_PEER_ADDRESS=localhost:7051
+
+peer channel update -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com -c $CHANNEL_NAME -f ./channel-artifacts/${CORE_PEER_LOCALMSPID}anchors.tx --tls true --cafile /home/fabric/fabric/fabric-samples/test-network/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
+
+
+# setGlobals 2
+export CORE_PEER_LOCALMSPID="Org2MSP"
+export CORE_PEER_TLS_ROOTCERT_FILE=./organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=./organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp
+export CORE_PEER_ADDRESS=localhost:9051
+
+peer channel update -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com -c $CHANNEL_NAME -f ./channel-artifacts/${CORE_PEER_LOCALMSPID}anchors.tx --tls true --cafile /home/fabric/fabric/fabric-samples/test-network/organizations/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
+```
+
+分别在两个组织的环境下，调用 `peer channel update` 命令， 更新 anchor peer 的状态。
+
+### 查看 channel 
+``` output
+❯ peer channel list
+2020-03-26 01:03:38.464 CST [channelCmd] InitCmdFactory -> INFO 001 Endorser and orderer connections initialized
+Channels peers has joined:
+charlie-channel2
+charlie-channel3
+test-channel5
+test-channel6
+test-channel2
+test-channel3
+charlie-channel4
+charlie-channel
+test-channel
+```

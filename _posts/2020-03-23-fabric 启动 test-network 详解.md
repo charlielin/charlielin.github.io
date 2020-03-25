@@ -616,7 +616,7 @@ configtxgen -profile TwoOrgsChannel -outputCreateChannelTx ./channel-artifacts/$
 输出文件：`./channel-artifacts/${CHANNEL_NAME}.tx`
 使用 `configtxgen` 命令生成一个 create channel configure transaction，输出 tx 文件。配置文件为 `./configtx/configtx.yaml`。
 
-#### createAnchorPeerTx
+### createAnchorPeerTx
 ```shell
 orgmsp=Org1MSP; configtxgen -profile TwoOrgsChannel -outputAnchorPeersUpdate ./channel-artifacts/${orgmsp}anchors.tx -channelID $CHANNEL_NAME -asOrg ${orgmsp} -configPath=./configtx
 orgmsp=Org2MSP; configtxgen -profile TwoOrgsChannel -outputAnchorPeersUpdate ./channel-artifacts/${orgmsp}anchors.tx -channelID $CHANNEL_NAME -asOrg ${orgmsp} -configPath=./configtx

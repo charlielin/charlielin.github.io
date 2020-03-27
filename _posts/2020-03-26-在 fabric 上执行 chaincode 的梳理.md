@@ -48,14 +48,17 @@ setGlobals() {
 cd fabric-samples/commercial-paper/organizations/magentocorp
 ./magnetocorp.sh
 ```
+把输出的内容复制到命令行中 export
 
 在第二个 terminal 中执行：
 ```shell
 cd fabric-samples/commercial-paper/organizations/digibank
 ./digibank.sh
 ```
+把输出的内容复制到命令行中 export
 
 ## 打包 chaincode 程序
+### for node.js
 在第一个 terminal 中运行：
 ```shell
 # setGlobals 2
@@ -69,6 +72,21 @@ peer lifecycle chaincode package cp.tar.gz --lang node --path ./contract --label
 peer lifecycle chaincode package cp.tar.gz --lang node --path ./contract --label cp_0
 ```
 
+### for java
+在打包前，先 build：
+```shell
+cd ./organizations/magentocorp/contract-java
+./gradlew build
+```
+ 再打包：
+ ```shelll
+ cd ..
+ peer lifecycle chaincode package cp.tar.gz --lang java --path ./contract-java --label cp_0
+ ```
+ 其余步骤与 node.js 一样。
+
+
+
 ## 安装 chaincode 程序
 在第一个 terminal 中运行：
 ```shell
@@ -81,7 +99,10 @@ peer lifecycle chaincode install cp.tar.gz
 # setGlobals 1
 peer lifecycle chaincode install cp.tar.gz
 ```
-**执行过程中会有好几次报错：peer0.org1.example.com|2020-03-26 14:56:05.514 UTC [endorser] SimulateProposal -> ERRO 05a failed to invoke chaincode _lifecycle, error: timeout expired while executing transaction 多试几次可以成功**
+**报错**
+执行过程中会有好几次报错：peer0.org1.example.com|2020-03-26 14:56:05.514 UTC [endorser] SimulateProposal -> ERRO 05a failed to invoke chaincode _lifecycle, error: timeout expired while executing transaction
+这是客户端在得到服务端的回复之前就断开了连接的缘故。这里可以修改 core.yaml 中的 peer.keepalive.client.timeout 来修改超时时间。
+
 ## approve the chaincode definition for my organizations
 分别在两个 terminal 中运行：
 ```shell

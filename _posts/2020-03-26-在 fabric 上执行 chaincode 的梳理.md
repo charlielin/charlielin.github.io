@@ -73,7 +73,7 @@ peer lifecycle chaincode package cp.tar.gz --lang node --path ./contract --label
 ```
 
 ### for java
-在打包前，先 build：
+在打包前，先 build（注：实际操作中发现不用先 build，因为上传的是源码，在服务端 install 的时候会 build 一次）：
 ```shell
 cd ./organizations/magentocorp/contract-java
 ./gradlew build
@@ -357,6 +357,27 @@ peer chaincode query -o localhost:7050  --ordererTLSHostnameOverride orderer.exa
     "schemas": {}
   }
 }
+```
+
+### 其他操作
+查找已提交的 chaincode：
+```shell
+> peer lifecycle chaincode querycommitted -C mychannel
+Committed chaincode definitions on channel 'mychannel':
+Name: papercontract, Version: 0, Sequence: 1, Endorsement Plugin: escc, Validation Plugin: vscc
+```
+查找已安装的 chaincode：
+（可以发现，在两个 peer 上分别执行，返回的 package id 不同）
+```shell
+# setGlobals 2
+> peer lifecycle chaincode queryinstalled
+Installed chaincodes on peer:
+Package ID: cp_0:3d3227b96d0c8be52c6982cc103761d17235a4d74385f1f789ce5eed8811e2d6, Label: cp_0
+
+# setGlobals 1
+> peer lifecycle chaincode queryinstalled
+Installed chaincodes on peer:
+Package ID: cp_0:f004476a6d6d3fde2a356fea83c8885b385dd7948cd72b2a7a86b74586dac9eb, Label: cp_0
 ```
 ## commercial-paper 客户端
 ### magnetocorp 发行

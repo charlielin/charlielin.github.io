@@ -8,7 +8,7 @@ tags:
     - hyperledger/fabric
 ---
 
-> 本文由 Charlie Lin 简单翻译。原文请这[这里](https://arxiv.org/pdf/1801.10228.pdf)。
+> 本文由 Charlie Lin 简单翻译。原文请看[这里](https://arxiv.org/pdf/1801.10228.pdf)。
 
 # Hyperledger Fabric：一个分布式的联盟链操作系统
 

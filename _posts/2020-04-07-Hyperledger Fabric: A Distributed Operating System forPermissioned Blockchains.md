@@ -10,7 +10,7 @@ tags:
 
 # Hyperledger Fabric：一个分布式的联盟链操作系统
 
-> 本文由 Charlie Lin 简单翻译。
+> 本文由 Charlie Lin 简单翻译。原文请这[这里](https://arxiv.org/pdf/1801.10228.pdf)。
 
 ## 摘要
 Fabric 是一个模块化、可扩展的，用于部署与操作联盟链的开源系统。隶属于 Hyperledger 项目。

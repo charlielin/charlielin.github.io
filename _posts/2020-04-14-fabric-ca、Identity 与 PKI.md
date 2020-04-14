@@ -9,7 +9,7 @@ tags:
     - Certificate
     - 数字证书
     - 密码学
-    - hyperldeger/fabric
+    - hyperledger/fabric
     - fabric-ca
 ---
 # fabric-ca、Identity 与 PKI

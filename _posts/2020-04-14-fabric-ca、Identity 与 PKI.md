@@ -47,12 +47,12 @@ PKI 由向各方（例如，服务的用户，服务提供者）发布数字证�
 例：
 在 fabric 中找到一个 ca.pem 文件使用命令`openssl x509 -noout -text -in ca.pem` 解析出来：
 ![](https://tva1.sinaimg.cn/large/007S8ZIlgy1gdsq520ta6j30yr0u0zrk.jpg)
-可以看到在证书的各个属性中，发行方 Issuer 与主体 Subject 完全一致，这就是一个来自 ca.org1.example.com 的 根证书，也称为 CA 自签名证书。
+可以看到在证书的各个属性中，发行方 Issuer 与主体 Subject 完全一致，这就是一个来自 `ca.org1.example.com` 的 根证书，也称为 CA 自签名证书。
 
 #### 普通证书
 普通证书是由证书授权中心签发的证书，里面包含证书主体的信息、证书主体的公钥、使用的算法等信息。同样找到一个 peer 节点的证书 peer.pem，也是用`openssl x509 -noout -text -in peer.pem` 将其解析出来：
 ![](https://tva1.sinaimg.cn/large/007S8ZIlgy1gdsqc1dwq1j30u00v67d1.jpg)
-可以看到，这是一个由 ca.org1.example.com 颁发给 peer0 的证书。
+可以看到，这是一个由 `ca.org1.example.com` 颁发给 peer0 的证书。
 ### 公私钥对
 fabric 中使用非对称密钥来进行身份验证与验证消息的完整性。关于非对称加密的相关知识这里不再赘述。
 ### 证书授权中心（Certificate Authority）

@@ -107,7 +107,250 @@ OrdererOrgs:
 输出：`./organizations/ordererOrganizations/example.com`
 
 ### 使用 fabric-ca 创建组织加密材料
-暂略
+除了使用 cryptogen，还可以使用 fabric ca 来生成加密材料。CAs 通过数字签名来产生对每一个组织的根信任。
+#### 使用 docker 的方式启动 fabric-ca
+命令：
+```shell
+IMAGE_TAG=$IMAGETAG docker-compose -f docker/docker-compose-ca.yaml up -d 2>&1
+```
+启动后会分别在 `organizations/fabric-ca/org1`，`organizations/fabric-ca/org2`，`organizations/fabric-ca/ordererOrg` 下生成：
+* 证书 `ca-cert.pem` 
+* 公钥 `IssuerPublicKey` 与 `IssuerRevocationPublicKey`
+* 私钥 `msp/keystore/IssuerSecretKey` 与 `msp/keystore/IssuerRevocationSecretKey`
+
+配置文件 `docker-comopse-ca.yaml`
+```yaml
+ Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+version: '2'
+
+networks:
+  test:
+
+services:
+
+  ca_org1:
+    image: hyperledger/fabric-ca:$IMAGE_TAG
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-org1
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=7054
+    ports:
+      - "7054:7054"
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    volumes:
+      - ../organizations/fabric-ca/org1:/etc/hyperledger/fabric-ca-server
+    container_name: ca_org1
+    networks:
+      - test
+
+  ca_org2:
+    image: hyperledger/fabric-ca:$IMAGE_TAG
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-org2
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=8054
+    ports:
+      - "8054:8054"
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    volumes:
+      - ../organizations/fabric-ca/org2:/etc/hyperledger/fabric-ca-server
+    container_name: ca_org2
+    networks:
+      - test
+
+  ca_orderer:
+    image: hyperledger/fabric-ca:$IMAGE_TAG
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-orderer
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=9054
+    ports:
+      - "9054:9054"
+    command: sh -c 'fabric-ca-server start -b admin:adminpw -d'
+    volumes:
+      - ../organizations/fabric-ca/ordererOrg:/etc/hyperledger/fabric-ca-server
+    container_name: ca_orderer
+    networks:
+      - test
+```
+
+如果 TLS 模式被启用，还会额外生成 tls 证书 `tls-cert.pem`  
+#### 创建 Org1 identities
+
+ca org1 服务器的端口地址为 7054，启用 tls，tls-ca 证书地址为：`/organizations/fabric-ca/org1/tls-cert.pem`
+
+##### Enroll CA admin
+```shell
+mkdir -p organizations/peerOrganizations/org1.example.com/
+export FABRIC_CA_CLIENT_HOME=${PWD}/organizations/peerOrganizations/org1.example.com/
+
+fabric-ca-client enroll -u https://admin:adminpw@localhost:7054 --caname ca-org1 --tls.certfiles ${PWD}/organizations/fabric-ca/org1/tls-cert.pem
+
+----
+
+2020/04/13 17:31:01 [INFO] Created a default configuration file at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/fabric-ca-client-config.yaml
+2020/04/13 17:31:01 [INFO] TLS Enabled
+2020/04/13 17:31:01 [INFO] generating key: &{A:ecdsa S:256}
+2020/04/13 17:31:01 [INFO] encoded CSR
+2020/04/13 17:31:01 [INFO] Stored client certificate at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/msp/signcerts/cert.pem
+2020/04/13 17:31:01 [INFO] Stored root CA certificate at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/msp/cacerts/localhost-7054-ca-org1.pem
+2020/04/13 17:31:01 [INFO] Stored Issuer public key at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/msp/IssuerPublicKey
+2020/04/13 17:31:01 [INFO] Stored Issuer revocation public key at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/msp/IssuerRevocationPublicKey
+```
+配置文件 organizations/peerOrganizations/org1.example.com/msp/config.yaml
+```yaml
+NodeOUs:
+  Enable: true
+  ClientOUIdentifier:
+    Certificate: cacerts/localhost-7054-ca-org1.pem
+    OrganizationalUnitIdentifier: client
+  PeerOUIdentifier:
+    Certificate: cacerts/localhost-7054-ca-org1.pem
+    OrganizationalUnitIdentifier: peer
+  AdminOUIdentifier:
+    Certificate: cacerts/localhost-7054-ca-org1.pem
+    OrganizationalUnitIdentifier: admin
+  OrdererOUIdentifier:
+    Certificate: cacerts/localhost-7054-ca-org1.pem
+    OrganizationalUnitIdentifier: orderer
+```
+配置文件中定义了 4 种 Organization Unit，分别是：client，peer，admin，orderer。
+##### Register peer0
+```shell
+fabric-ca-client register --caname ca-org1 --id.name peer0 --id.secret peer0pw --id.type peer --tls.certfiles ${PWD}/organizations/fabric-ca/org1/tls-cert.pem
+
+----
+
+2020/04/13 17:32:07 [INFO] Configuration file location: /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/fabric-ca-client-config.yaml
+2020/04/13 17:32:07 [INFO] TLS Enabled
+2020/04/13 17:32:07 [INFO] TLS Enabled
+Password: peer0pw
+```
+
+##### Register user/client
+```shell
+fabric-ca-client register --caname ca-org1 --id.name user1 --id.secret user1pw --id.type client --tls.certfiles ${PWD}/organizations/fabric-ca/org1/tls-cert.pem
+
+----
+
+2020/04/13 17:32:49 [INFO] Configuration file location: /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/fabric-ca-client-config.yaml
+2020/04/13 17:32:49 [INFO] TLS Enabled
+2020/04/13 17:32:49 [INFO] TLS Enabled
+Password: user1pw
+```
+
+##### Register org admin
+```shell
+fabric-ca-client register --caname ca-org1 --id.name org1admin --id.secret org1adminpw --id.type admin --tls.certfiles ${PWD}/organizations/fabric-ca/org1/tls-cert.pem
+
+----
+
+2020/04/13 17:33:18 [INFO] Configuration file location: /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/fabric-ca-client-config.yaml
+2020/04/13 17:33:18 [INFO] TLS Enabled
+2020/04/13 17:33:18 [INFO] TLS Enabled
+Password: org1adminpw
+```
+##### 生成 peer0 msp
+```shell
+fabric-ca-client enroll -u https://peer0:peer0pw@localhost:7054 --caname ca-org1 -M ${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp --csr.hosts peer0.org1.example.com --tls.certfiles ${PWD}/organizations/fabric-ca/org1/tls-cert.pem
+
+----
+
+2020/04/13 17:33:57 [INFO] TLS Enabled
+2020/04/13 17:33:57 [INFO] generating key: &{A:ecdsa S:256}
+2020/04/13 17:33:57 [INFO] encoded CSR
+2020/04/13 17:33:57 [INFO] Stored client certificate at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/signcerts/cert.pem
+2020/04/13 17:33:57 [INFO] Stored root CA certificate at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/cacerts/localhost-7054-ca-org1.pem
+2020/04/13 17:33:57 [INFO] Stored Issuer public key at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/IssuerPublicKey
+2020/04/13 17:33:57 [INFO] Stored Issuer revocation public key at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/IssuerRevocationPublicKey
+```
+```shell
+cp ${PWD}/organizations/peerOrganizations/org1.example.com/msp/config.yaml ${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/config.yaml
+```
+
+##### 生成 peer0-tls 证书
+```shell
+fabric-ca-client enroll -u https://peer0:peer0pw@localhost:7054 --caname ca-org1 -M ${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls --enrollment.profile tls --csr.hosts peer0.org1.example.com --csr.hosts localhost --tls.certfiles ${PWD}/organizations/fabric-ca/org1/tls-cert.pem
+
+----
+
+2020/04/13 18:18:14 [INFO] TLS Enabled
+2020/04/13 18:18:14 [INFO] generating key: &{A:ecdsa S:256}
+2020/04/13 18:18:14 [INFO] encoded CSR
+2020/04/13 18:18:14 [INFO] Stored client certificate at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/signcerts/cert.pem
+2020/04/13 18:18:14 [INFO] Stored TLS root CA certificate at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/tlscacerts/tls-localhost-7054-ca-org1.pem
+2020/04/13 18:18:14 [INFO] Stored Issuer public key at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/IssuerPublicKey
+2020/04/13 18:18:14 [INFO] Stored Issuer revocation public key at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/IssuerRevocationPublicKey
+```
+
+```shell
+# 不存在
+cp ${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/tlscacerts/* ${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
+# 不存在
+cp ${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/signcerts/* ${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/server.crt
+# 不存在
+cp ${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/keystore/* ${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/server.key
+# 创建 org1.example.com msp 的 tls ca证书目录
+mkdir ${PWD}/organizations/peerOrganizations/org1.example.com/msp/tlscacerts
+# 复制 tls 证书到 org1.example.com 目录下
+cp ${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/tlscacerts/* ${PWD}/organizations/peerOrganizations/org1.example.com/msp/tl scacerts/ca.crt
+# 创建 org1.example.com 的 tlsca 目录
+mkdir ${PWD}/organizations/peerOrganizations/org1.example.com/tlsca
+# 复制 tlsca 证书
+cp ${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/tlscacerts/* ${PWD}/organizations/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+
+mkdir ${PWD}/organizations/peerOrganizations/org1.example.com/ca
+cp ${PWD}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/msp/cacerts/* ${PWD}/organizations/peerOrganizations/org1.example.com/ca/ca.org1.example.com-cert.pem
+
+mkdir -p organizations/peerOrganizations/org1.example.com/users
+```
+##### 生成 user msp
+```shell
+mkdir -p organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com
+
+fabric-ca-client enroll -u https://user1:user1pw@localhost:7054 --caname ca-org1 -M ${PWD}/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp --tls.certfiles ${PWD}/organizations/fabric-ca/org1/tls-cert.pem
+
+----
+
+2020/04/13 18:55:40 [INFO] TLS Enabled
+2020/04/13 18:55:40 [INFO] generating key: &{A:ecdsa S:256}
+2020/04/13 18:55:40 [INFO] encoded CSR
+2020/04/13 18:55:40 [INFO] Stored client certificate at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/signcerts/cert.pem
+2020/04/13 18:55:40 [INFO] Stored root CA certificate at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/cacerts/localhost-7054-ca-org1.pem
+2020/04/13 18:55:40 [INFO] Stored Issuer public key at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/IssuerPublicKey
+2020/04/13 18:55:40 [INFO] Stored Issuer revocation public key at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/User1@org1.example.com/msp/IssuerRevocationPublicKey
+```
+```shell
+```
+
+##### 生成 org admin msp
+```shell
+mkdir -p organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com
+
+fabric-ca-client enroll -u https://org1admin:org1adminpw@localhost:7054 --caname ca-org1 -M ${PWD}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp --tls.certfiles ${PWD}/organizations/fabric-ca/org1/tls-cert.pem
+
+----
+
+2020/04/13 18:57:19 [INFO] TLS Enabled
+2020/04/13 18:57:19 [INFO] generating key: &{A:ecdsa S:256}
+2020/04/13 18:57:19 [INFO] encoded CSR
+2020/04/13 18:57:19 [INFO] Stored client certificate at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/signcerts/cert.pem
+2020/04/13 18:57:19 [INFO] Stored root CA certificate at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/cacerts/localhost-7054-ca-org1.pem
+2020/04/13 18:57:19 [INFO] Stored Issuer public key at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/IssuerPublicKey
+2020/04/13 18:57:19 [INFO] Stored Issuer revocation public key at /home/fabric/fabric/fabric-samples/test-network/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp/IssuerRevocationPublicKey
+```
+#### 创建 Org2 identities
+同创建 Org1
+
+#### 创建 OrdererOrg identities
+同创建 Org1
 
 ## 创建创世区块（Genesis Block）
  在创建组织加密材料之后，需要创建排序系统 channel 的创世纪区块。该区块是启动其他排序节点与其他应用 channel 所必须的。

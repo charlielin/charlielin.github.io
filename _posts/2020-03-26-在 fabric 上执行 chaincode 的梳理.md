@@ -7,7 +7,7 @@ catalog:    true
 tags:
     - hyperledger/fabric
 ---
-
+[toc]
 
 # 在 fabric 上执行 chaincode 的梳理
 
@@ -78,14 +78,12 @@ peer lifecycle chaincode package cp.tar.gz --lang node --path ./contract --label
 cd ./organizations/magentocorp/contract-java
 ./gradlew build
 ```
- 再打包：
- ```shelll
- cd ..
- peer lifecycle chaincode package cp.tar.gz --lang java --path ./contract-java --label cp_0
- ```
- 其余步骤与 node.js 一样。
-
-
+再打包：
+```shelll
+cd ..
+peer lifecycle chaincode package cp.tar.gz --lang java --path ./contract-java --label cp_0
+```
+其余步骤与 node.js 一样。
 
 ## 安装 chaincode 程序
 在第一个 terminal 中运行：
@@ -102,6 +100,14 @@ peer lifecycle chaincode install cp.tar.gz
 **报错**
 执行过程中会有好几次报错：peer0.org1.example.com|2020-03-26 14:56:05.514 UTC [endorser] SimulateProposal -> ERRO 05a failed to invoke chaincode _lifecycle, error: timeout expired while executing transaction
 这是客户端在得到服务端的回复之前就断开了连接的缘故。这里可以修改 core.yaml 中的 peer.keepalive.client.timeout 来修改超时时间。
+
+分别在两个 terminal 中执行：
+```shell
+> peer lifecycle chaincode queryinstalled
+Installed chaincodes on peer:
+Package ID: cp_0:07fd097779797941c75b559b0c552b5335cc7fca95a098cb566cfb49673a6e76, Label: cp_0
+```
+说明已经安装成功。
 
 ## approve the chaincode definition for my organizations
 分别在两个 terminal 中运行：
@@ -439,3 +445,54 @@ Transaction complete.
 Disconnect from Fabric gateway.
 Redeem program complete.
 ```
+## 更新 chaincode 程序
+当 chaincode 程序提交运行后，可以对其进行更新。更新的 chaincode 程序需要与原来的程序具有相同的 chaincode 名字，并对 version 进行升级。
+### 打包 chaincode 程序
+```shell
+ peer lifecycle chaincode package cp.tar.gz --lang java --path ./contract-java --label cp_1
+```
+注意这里的 label 相比之前发生了变化。
+### 安装 chaincode 程序
+``` shell
+peer lifecycle chaincode install cp.tar.gz
+```
+这一步骤没有区别。
+
+### approve the chaincode definition for my organizations
+```shell
+> peer lifecycle chaincode queryinstalled 
+Installed chaincodes on peer:
+Package ID: cp_0:07fd097779797941c75b559b0c552b5335cc7fca95a098cb566cfb49673a6e76, Label: cp_0
+Package ID: cp_1:2da28088c9f13c6b64e877fc29ef811b506207ef1d344cf4ab343b4becb0d2a1, Label: cp_1
+```
+可以看到这里的多了一个 cp_1开头的 package，记下 Package ID
+```shell
+peer lifecycle chaincode approveformyorg  --orderer localhost:7050 --ordererTLSHostnameOverride orderer.example.com \
+                                          --channelID mychannel  \
+                                          --name papercontract  \
+                                          -v 1  \
+                                          --package-id $PACKAGE_ID \
+                                          --sequence 2  \
+                                          --tls  \
+                                          --cafile $ORDERER_TLS_ROOTCERT_FILE
+```
+注意这里 `-v` 和 `--sequence` 都发生了变化，但 `--name` 必须保持一致。不然 fabric 会认为这是一个全新的程序。
+
+### 检查 chaincode 状态
+```shell
+peer lifecycle chaincode checkcommitreadiness --channelID mychannel --name papercontract -v 1 --sequence 2
+```
+检查 version=1 sequence=2 的新版本程序的状态
+
+### 提交更新后的程序
+```shell
+peer lifecycle chaincode commit -o localhost:7050 \
+                                --peerAddresses localhost:7051 --tlsRootCertFiles ${PEER0_ORG1_CA} \
+                                --peerAddresses localhost:9051 --tlsRootCertFiles ${PEER0_ORG2_CA} \
+                                --ordererTLSHostnameOverride orderer.example.com \
+                                --channelID mychannel --name papercontract -v 1 \
+                                --sequence 2 \
+                                --tls --cafile $ORDERER_CA --waitForEven
+```
+同样注意 version 与 sequence。
+提交后，mychannel 上的 chaincode——papercontract 就更新完毕了。

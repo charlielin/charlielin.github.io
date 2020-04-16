@@ -7,6 +7,7 @@ catalog:    true
 tags:
     - hyperledger/fabric
 ---
+[toc]
 # fabric 启动 test-network 梳理
 
 ## 检查依赖
@@ -351,6 +352,76 @@ fabric-ca-client enroll -u https://org1admin:org1adminpw@localhost:7054 --caname
 
 #### 创建 OrdererOrg identities
 同创建 Org1
+
+#### 生成 common connection profile 
+执行：
+```shell
+./organizations/ccp-generate.sh
+```
+
+```yaml
+name: test-network-org1
+version: 1.0.0
+client:
+  organization: Org1
+  connection:
+    timeout:
+      peer:
+        endorser: '300'
+organizations:
+  Org1:
+    mspid: Org1MSP
+    peers:
+    - peer0.org1.example.com
+    certificateAuthorities:
+    - ca.org1.example.com
+peers:
+  peer0.org1.example.com:
+    url: grpcs://localhost:7051
+    tlsCACerts:
+      pem: |
+        -----BEGIN CERTIFICATE-----
+        MIICJjCCAc2gAwIBAgIUA1EC6Nknl7CdKC6X8iEaVR/9lsQwCgYIKoZIzj0EAwIw
+        cDELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMQ8wDQYDVQQH
+        EwZEdXJoYW0xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh
+        Lm9yZzEuZXhhbXBsZS5jb20wHhcNMjAwNDE0MTgwNjAwWhcNMzUwNDExMTgwNjAw
+        WjBwMQswCQYDVQQGEwJVUzEXMBUGA1UECBMOTm9ydGggQ2Fyb2xpbmExDzANBgNV
+        BAcTBkR1cmhhbTEZMBcGA1UEChMQb3JnMS5leGFtcGxlLmNvbTEcMBoGA1UEAxMT
+        Y2Eub3JnMS5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABKtq
+        IgejrDlftVEpcY30l6UvxpBtWy3Mp3kA98e2vCmAqdOwRDPOQV0Z9ObqaNrfdvpR
+        htFJT2qLIKSV/3TFzMOjRTBDMA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAG
+        AQH/AgEBMB0GA1UdDgQWBBQcaQp7+hLFJs7lAo5mBcKJ5LUB2zAKBggqhkjOPQQD
+        AgNHADBEAiBzU0c38kJRhY3iJ075WaqPOenn4OcsZ0KP71PtOvQ3kwIgLMCVd1Qd
+        6DQ38b5fjYDjkc9XTGSfGlGyVJzdeXn9+tY=
+        -----END CERTIFICATE-----
+
+    grpcOptions:
+      ssl-target-name-override: peer0.org1.example.com
+      hostnameOverride: peer0.org1.example.com
+certificateAuthorities:
+  ca.org1.example.com:
+    url: https://localhost:7054
+    caName: ca-org1
+    tlsCACerts:
+      pem: |
+        -----BEGIN CERTIFICATE-----
+        MIICJjCCAc2gAwIBAgIUA1EC6Nknl7CdKC6X8iEaVR/9lsQwCgYIKoZIzj0EAwIw
+        cDELMAkGA1UEBhMCVVMxFzAVBgNVBAgTDk5vcnRoIENhcm9saW5hMQ8wDQYDVQQH
+        EwZEdXJoYW0xGTAXBgNVBAoTEG9yZzEuZXhhbXBsZS5jb20xHDAaBgNVBAMTE2Nh
+        Lm9yZzEuZXhhbXBsZS5jb20wHhcNMjAwNDE0MTgwNjAwWhcNMzUwNDExMTgwNjAw
+        WjBwMQswCQYDVQQGEwJVUzEXMBUGA1UECBMOTm9ydGggQ2Fyb2xpbmExDzANBgNV
+        BAcTBkR1cmhhbTEZMBcGA1UEChMQb3JnMS5leGFtcGxlLmNvbTEcMBoGA1UEAxMT
+        Y2Eub3JnMS5leGFtcGxlLmNvbTBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABKtq
+        IgejrDlftVEpcY30l6UvxpBtWy3Mp3kA98e2vCmAqdOwRDPOQV0Z9ObqaNrfdvpR
+        htFJT2qLIKSV/3TFzMOjRTBDMA4GA1UdDwEB/wQEAwIBBjASBgNVHRMBAf8ECDAG
+        AQH/AgEBMB0GA1UdDgQWBBQcaQp7+hLFJs7lAo5mBcKJ5LUB2zAKBggqhkjOPQQD
+        AgNHADBEAiBzU0c38kJRhY3iJ075WaqPOenn4OcsZ0KP71PtOvQ3kwIgLMCVd1Qd
+        6DQ38b5fjYDjkc9XTGSfGlGyVJzdeXn9+tY=
+        -----END CERTIFICATE-----
+
+    httpOptions:
+      verify: false      
+```
 
 ## 创建创世区块（Genesis Block）
  在创建组织加密材料之后，需要创建排序系统 channel 的创世纪区块。该区块是启动其他排序节点与其他应用 channel 所必须的。

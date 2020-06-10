@@ -21,54 +21,48 @@ tags:
 准备一个环境变量脚本 ~/.fabric.sh，用于切换环境变量以对应不同的 peer。
 ```shell
 #! /bin/bash
-setGlobals() {
-  org=$1
-  export ORDERER_TLS_ROOTCERT_FILE=${TEST_NETWORK}/organizations/ordererOrganizations/example.com/msp/tlscacerts/tlsca.example.com-cert.pem
-  if [ $org -eq 1 ];then
-    export CORE_PEER_LOCALMSPID="Org1MSP"
-    export CORE_PEER_TLS_ROOTCERT_FILE=${TEST_NETWORK}/organizations/peerOrganizations/org1.example.com/peers/peer0.org1.example.com/tls/ca.crt
-    export CORE_PEER_MSPCONFIGPATH=${TEST_NETWORK}/organizations/peerOrganizations/org1.example.com/users/Admin@org1.example.com/msp
-    export CORE_PEER_ADDRESS=localhost:7051
-  elif [ $org -eq 2 ]; then
-    export CORE_PEER_LOCALMSPID="Org2MSP"
-    export CORE_PEER_TLS_ROOTCERT_FILE=${TEST_NETWORK}/organizations/peerOrganizations/org2.example.com/peers/peer0.org2.example.com/tls/ca.crt
-    export CORE_PEER_MSPCONFIGPATH=${TEST_NETWORK}/organizations/peerOrganizations/org2.example.com/users/Admin@org2.example.com/msp
-    export CORE_PEER_ADDRESS=localhost:9051
-  else
-    echo "need parameter!!!"
-  fi
+mySetGlobals() {
+  export CORE_PEER_TLS_ENABLED="true"
+  export ORDERER_CA=${TEST_NETWORK}/organizations/ordererOrganizations/nd.com.cn/orderers/orderer.nd.com.cn/msp/tlscacerts/tlsca.nd.com.cn-cert.pem
+  export ORDERER_TLS_ROOTCERT_FILE=${TEST_NETWORK}/organizations/ordererOrganizations/nd.com.cn/msp/tlscacerts/tlsca.nd.com.cn-cert.pem
+  export PEER0_ORG1_CA=${TEST_NETWORK}/organizations/peerOrganizations/org1.nd.com.cn/peers/peer0.org1.nd.com.cn/tls/ca.crt
+  export PEER1_ORG1_CA=${TEST_NETWORK}/organizations/peerOrganizations/org1.nd.com.cn/peers/peer1.org1.nd.com.cn/tls/ca.crt
+  export PEER2_ORG1_CA=${TEST_NETWORK}/organizations/peerOrganizations/org1.nd.com.cn/peers/peer2.org1.nd.com.cn/tls/ca.crt
+  export PEER0_ORG2_CA=${TEST_NETWORK}/organizations/peerOrganizations/org2.nd.com.cn/peers/peer0.org2.nd.com.cn/tls/ca.crt
+  export PEER1_ORG2_CA=${TEST_NETWORK}/organizations/peerOrganizations/org2.nd.com.cn/peers/peer1.org2.nd.com.cn/tls/ca.crt
+  export PEER0_ORG3_CA=${TEST_NETWORK}/organizations/peerOrganizations/org3.nd.com.cn/peers/peer0.org3.nd.com.cn/tls/ca.crt
+  export PEER1_ORG3_CA=${TEST_NETWORK}/organizations/peerOrganizations/org3.nd.com.cn/peers/peer1.org3.nd.com.cn/tls/ca.crt
+  export PEER0_ORG4_CA=${TEST_NETWORK}/organizations/peerOrganizations/org4.nd.com.cn/peers/peer0.org4.nd.com.cn/tls/ca.crt
+  export PEER1_ORG4_CA=${TEST_NETWORK}/organizations/peerOrganizations/org4.nd.com.cn/peers/peer1.org4.nd.com.cn/tls/ca.crt
+
+  USING_ORG=$1
+  USING_PEER=$2
+  PORT=$((7051+2000*$USING_PEER))
+  export CORE_PEER_ADDRESS=peer${USING_PEER}.org${USING_ORG}.nd.com.cn:$PORT
+  export CORE_PEER_LOCALMSPID="Org${USING_ORG}MSP"
+  export CORE_PEER_TLS_ROOTCERT_FILE=${TEST_NETWORK}/organizations/peerOrganizations/org${USING_ORG}.nd.com.cn/peers/peer${USING_PEER}.org${USING_ORG}.nd.com.cn/tls/ca.crt
+  export CORE_PEER_MSPCONFIGPATH=${TEST_NETWORK}/organizations/peerOrganizations/org${USING_ORG}.nd.com.cn/users/Admin@org${USING_ORG}.nd.com.cn/msp
+
 }
 ```
 ```shell
 . ~/.fabric.sh
 ```
 
-在第一个 terminal 中执行：
-```shell
-cd fabric-samples/commercial-paper/organizations/magentocorp
-./magnetocorp.sh
-```
-把输出的内容复制到命令行中 export
-
-在第二个 terminal 中执行：
-```shell
-cd fabric-samples/commercial-paper/organizations/digibank
-./digibank.sh
-```
-把输出的内容复制到命令行中 export
-
 ## 打包 chaincode 程序
 ### for node.js
 在第一个 terminal 中运行：
 ```shell
-# setGlobals 2
+# 设置环境变量，指向 peer0.org2.nd.com.cn
+setGlobals 2 0
 peer lifecycle chaincode package cp.tar.gz --lang node --path ./contract --label cp_0
 ```
 注意：在执行前要先设置 peer2 的环境变量
 
 在第二个 terminal 中运行：
 ```shell
-# setGlobals 1
+# 设置环境变量，指向 peer0.org1.nd.com.cn
+setGlobals 1 0
 peer lifecycle chaincode package cp.tar.gz --lang node --path ./contract --label cp_0
 ```
 
@@ -88,18 +82,22 @@ peer lifecycle chaincode package cp.tar.gz --lang java --path ./contract-java --
 ## 安装 chaincode 程序
 在第一个 terminal 中运行：
 ```shell
-# setGlobals 2
+setGlobals 2 0
 peer lifecycle chaincode install cp.tar.gz
 ```
 
 在第二个 terminal 中运行：
 ```shell
-# setGlobals 1
+setGlobals 1 0
 peer lifecycle chaincode install cp.tar.gz
 ```
 **报错**
 执行过程中会有好几次报错：peer0.org1.example.com|2020-03-26 14:56:05.514 UTC [endorser] SimulateProposal -> ERRO 05a failed to invoke chaincode _lifecycle, error: timeout expired while executing transaction
 这是客户端在得到服务端的回复之前就断开了连接的缘故。这里可以修改 core.yaml 中的 peer.keepalive.client.timeout 来修改超时时间。
+**多个 peer 节点的情况**
+1. 在遇到每个组织有多个节点时，需要在每个 peer 节点上都 install 一次，否则在程序运行后会提示找不到 chaincode 程序 
+2. 这里的每个节点，指的是 endorsement policy 里规定的需要的节点。
+
 
 分别在两个 terminal 中执行：
 ```shell
@@ -115,7 +113,7 @@ Package ID: cp_0:07fd097779797941c75b559b0c552b5335cc7fca95a098cb566cfb49673a6e7
 export PACKAGE_ID=$(peer lifecycle chaincode queryinstalled --output json | jq -r '.installed_chaincodes[0].package_id')
 echo $PACKAGE_ID
 
-peer lifecycle chaincode approveformyorg  --orderer localhost:7050 --ordererTLSHostnameOverride orderer.example.com \
+peer lifecycle chaincode approveformyorg  --orderer orderer.nd.com.cn:7050 --ordererTLSHostnameOverride orderer.nd.com.cn \
                                           --channelID mychannel  \
                                           --name papercontract  \
                                           -v 0  \
@@ -152,24 +150,41 @@ Org2MSP: true
 ```shell
 # 第一个 terminal 中 
 
-peer lifecycle chaincode commit -o localhost:7050 \
-                                --peerAddresses localhost:7051 --tlsRootCertFiles ${PEER0_ORG1_CA} \
-                                --peerAddresses localhost:9051 --tlsRootCertFiles ${PEER0_ORG2_CA} \
-                                --ordererTLSHostnameOverride orderer.example.com \
-                                --channelID mychannel --name papercontract -v 0 \
-                                --sequence 1 \
-                                --tls --cafile $ORDERER_CA --waitForEvent
+peer lifecycle chaincode commit -o orderer.nd.com.cn:7050 \
+      --peerAddresses peer0.org1.nd.com.cn:7051 --tlsRootCertFiles ${PEER0_ORG1_CA} \
+      --peerAddresses peer1.org1.nd.com.cn:9051 --tlsRootCertFiles ${PEER1_ORG1_CA} \
+      --peerAddresses peer2.org1.nd.com.cn:11051 --tlsRootCertFiles ${PEER2_ORG1_CA} \
+      --peerAddresses peer0.org2.nd.com.cn:7051 --tlsRootCertFiles ${PEER0_ORG2_CA} \
+      --peerAddresses peer1.org2.nd.com.cn:9051 --tlsRootCertFiles ${PEER1_ORG2_CA} \
+      --peerAddresses peer2.org2.nd.com.cn:11051 --tlsRootCertFiles ${PEER2_ORG2_CA} \
+      --ordererTLSHostnameOverride orderer.nd.com.cn \
+      --channelID mychannel --name papercontract -v 0 \
+      --sequence 1 \
+      --tls --cafile $ORDERER_CA --waitForEvent
+```
+返回结果：
+```
+2020-06-08 15:32:00.871 CST [chaincodeCmd] ClientWait -> INFO 001 txid [436c5e991841ea596913ba2650a5d98cb07d119246768aa4ec9c121bc9c38bc5] committed with status (VALID) at peer0.org2.nd.com.cn:7051
+2020-06-08 15:32:00.959 CST [chaincodeCmd] ClientWait -> INFO 002 txid [436c5e991841ea596913ba2650a5d98cb07d119246768aa4ec9c121bc9c38bc5] committed with status (VALID) at peer2.org2.nd.com.cn:11051
+2020-06-08 15:32:00.974 CST [chaincodeCmd] ClientWait -> INFO 003 txid [436c5e991841ea596913ba2650a5d98cb07d119246768aa4ec9c121bc9c38bc5] committed with status (VALID) at peer1.org2.nd.com.cn:9051
+2020-06-08 15:32:01.165 CST [chaincodeCmd] ClientWait -> INFO 004 txid [436c5e991841ea596913ba2650a5d98cb07d119246768aa4ec9c121bc9c38bc5] committed with status (VALID) at peer1.org1.nd.com.cn:9051
+2020-06-08 15:32:01.192 CST [chaincodeCmd] ClientWait -> INFO 005 txid [436c5e991841ea596913ba2650a5d98cb07d119246768aa4ec9c121bc9c38bc5] committed with status (VALID) at peer0.org1.nd.com.cn:7051
+2020-06-08 15:32:01.256 CST [chaincodeCmd] ClientWait -> INFO 006 txid [436c5e991841ea596913ba2650a5d98cb07d119246768aa4ec9c121bc9c38bc5] committed with status (VALID) at peer2.org1.nd.com.cn:11051
 ```
 
 ### 测试 chaincode
 测试一：
 ```shell
-peer chaincode invoke -o localhost:7050  --ordererTLSHostnameOverride orderer.example.com \
-                                --peerAddresses localhost:7051 --tlsRootCertFiles ${PEER0_ORG1_CA} \
-                                --peerAddresses localhost:9051 --tlsRootCertFiles ${PEER0_ORG2_CA} \
-                                --channelID mychannel --name papercontract \
-                                -c '{"Args":["org.papernet.commercialpaper:instantiate"]}' ${PEER_ADDRESS_ORG1} ${PEER_ADDRESS_ORG2} \
-                                --tls --cafile $ORDERER_CA --waitForEvent
+peer chaincode invoke -o orderer.nd.com.cn:7050  --ordererTLSHostnameOverride orderer.nd.com.cn \
+      --peerAddresses peer0.org1.nd.com.cn:7051 --tlsRootCertFiles ${PEER0_ORG1_CA} \
+      --peerAddresses peer1.org1.nd.com.cn:9051 --tlsRootCertFiles ${PEER1_ORG1_CA} \
+      --peerAddresses peer2.org1.nd.com.cn:11051 --tlsRootCertFiles ${PEER2_ORG1_CA} \
+      --peerAddresses peer0.org2.nd.com.cn:7051 --tlsRootCertFiles ${PEER0_ORG2_CA} \
+      --peerAddresses peer1.org2.nd.com.cn:9051 --tlsRootCertFiles ${PEER1_ORG2_CA} \
+      --peerAddresses peer2.org2.nd.com.cn:11051 --tlsRootCertFiles ${PEER2_ORG2_CA} \
+      --channelID mychannel --name papercontract \
+      -c '{"Args":["org.papernet.commercialpaper:instantiate"]}' ${PEER_ADDRESS_ORG1} ${PEER_ADDRESS_ORG2} \
+      --tls --cafile $ORDERER_CA --waitForEvent
 ```
 返回结果：
 ```output
@@ -179,11 +194,11 @@ peer chaincode invoke -o localhost:7050  --ordererTLSHostnameOverride orderer.ex
 ```
  测试二：
 ```shell
-peer chaincode query -o localhost:7050  --ordererTLSHostnameOverride orderer.example.com \
+peer chaincode query -o orderer.nd.com.cn:7050  --ordererTLSHostnameOverride orderer.nd.com.cn \
                                         --channelID mychannel \
                                         --name papercontract \
                                         -c '{"Args":["org.hyperledger.fabric:GetMetadata"]}' \
-                                        --peerAddresses localhost:9051 --tlsRootCertFiles ${PEER0_ORG2_CA} \
+                                        --peerAddresses peer0.org2.nd.com.cn:9051 --tlsRootCertFiles ${PEER0_ORG2_CA} \
                                         --tls --cafile $ORDERER_CA | jq -C
 ```
  返回结果：

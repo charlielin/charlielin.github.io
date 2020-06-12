@@ -1,11 +1,11 @@
----
+---
 layout:     post
 title:      fabric 新增 peer 节点
 date:       2020-06-01
 author:     Charlie Lin
 catalog:    true
 tags:
-     - hyperledger/fabric
+    - hyperledger/fabric
 ---
 
 # fabric 新增 peer 节点

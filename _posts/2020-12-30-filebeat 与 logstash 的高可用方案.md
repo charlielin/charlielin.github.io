@@ -24,7 +24,8 @@ tags:
 加入 kafka 的优点如下：
 1. 当logstash 宕机时，数据可以存储在 kafka 中，等待 logstash 恢复后再做处理；
 2. 当logstash 聚合压力较大，处理不及时的时候，kafka 可以作为 filebeat 与 logstash 之间的缓冲，避免因为 logstash 处理不及时造成数据丢失；
-3. 为使用 logstash 集群进行处理提供基础。
+3. 为使用 logstash 集群进行处理提供基础。  
+  
 ### 单机 logstash 升级为logstash 集群 
 将原有的一个 logstash 升级为多个 logstash 协同工作，使用并行读取的方式，多个 logstash 同时读取 kafka 中的数据，一方面大大提高了吞吐量；另一方面，当其中某台 logstash 宕机时，其余机器可以保证系统继续运行。
 ## 难点说明

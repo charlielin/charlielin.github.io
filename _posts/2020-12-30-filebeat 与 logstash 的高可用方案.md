@@ -1,7 +1,7 @@
 ---
 layout:     post
-title:      谓词下推
-date:       2020-11-24
+title:      filebeat 与 logstash 聚合的高可用方案
+date:       2020-12-31
 author:     Charlie Lin
 catalog:    true
 tags:

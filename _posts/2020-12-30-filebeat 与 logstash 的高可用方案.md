@@ -1,7 +1,7 @@
 ---
 layout:     post
 title:      filebeat 与 logstash 聚合的高可用方案
-date:       2020-12-31
+date:       2020-12-30
 author:     Charlie Lin
 catalog:    true
 tags:
@@ -10,7 +10,7 @@ tags:
 # filebeat 与 logstash 聚合的高可用方案
 
 ## 起因
-在目前虚幻魔域的项目中，需要采集各个服务器上的所有日志（主要是登录日志），然后统一进行分析。 
+在目前虚幻魔域的项目中，需要采集各个服务器上的所有日志（主要是登录日志），然后统一进行分析。  
 其中最主要的是玩家登录分析。在游戏逻辑中，一个登录分为若干个子过程，举个例子，玩家首先要打开客户端输入帐密，在登录服务器端产生一条 LoginAccountValidation 日志，校验成功后，再校验客户端版本，在登录服务器产生一条 CheckVersion 日志，接着，需要分配角色到对应的游戏服务器，在游服产生一条 AssignPlayerToGS 日志，然后接着是确认客户端连接到对应的游服，记录一条 ClientConnectToGS 日志。这样玩家的一次登录过程，在登录服务器、游戏服务器分别产生了 4 条日志，记录了此次完整的登录过程。  
 为了将分散在各个服务器的日志集中收集起来，产生一条完整的玩家登录日志，我们在游服、登录服各部署一个 filebeat 进行采集日志，每一个登录过程都用一个 transID 唯一标识。采集后的日志发送到 logstash 进行聚合，logstash 会将所有相同 transID 的日志聚合起来产生一条记录了完整登录过程的日志。整个过程如图所示：
 ![](https://tva1.sinaimg.cn/large/0081Kckwly1gm5ybk2t2fj30tf0gyq4e.jpg)  
@@ -62,3 +62,12 @@ tags:
 
 ## 创新收益评估
 将原本单机无容错的 logstash 聚合服务扩充为分布式高可用的聚合服务。在提高了服务吞吐量的同时，增加了服务的可靠性。
+
+
+```
+hive > ADD JAR /home/charlie/elasticsearch-hadoop-2.3.4.jar;
+Added [/home/charlie/elasticsearch-hadoop-2.3.4.jar] to class path
+Added resources: [/home/charlie/elasticsearch-hadoop-2.3.4.jar]
+```
+
+

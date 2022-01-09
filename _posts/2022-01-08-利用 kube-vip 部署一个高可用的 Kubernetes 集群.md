@@ -216,7 +216,7 @@ kube-vip manifest pod \
     --leaderElection | sudo tee /etc/kubernetes/manifests/kube-vip.yaml
 ```
 
-在 /etc/kubernetes/manifests 目录下生成 kube-vip.yaml 配置文件：
+执行后会在 `/etc/kubernetes/manifests` 目录下生成 kube-vip.yaml 配置文件：
 
 ```yaml
 apiVersion: v1

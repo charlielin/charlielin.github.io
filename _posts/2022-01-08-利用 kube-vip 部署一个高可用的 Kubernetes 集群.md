@@ -104,8 +104,8 @@ sudo apt-get -y install docker-ce
 
 修改 docker 的配置，修改 cgroupdriver 为 systemd：
 
-```json
-{
+```
+{  
   "registry-mirrors": [
     "https://ebcsc6ia.mirror.aliyuncs.com",
     "https://docker.mirrors.ustc.edu.cn"
@@ -117,7 +117,7 @@ sudo apt-get -y install docker-ce
     "max-size": "100m"
   },
   "storage-driver": "overlay2",
-  "dns": ["192.168.9.35", "8.8.8.8"]
+  "dns": ["192.168.9.35", "8.8.8.8"]  
 }
 ```
 

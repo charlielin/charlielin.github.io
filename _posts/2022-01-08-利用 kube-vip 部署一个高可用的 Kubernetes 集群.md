@@ -123,7 +123,7 @@ sudo apt-get -y install docker-ce
 
 增加 docker http/https 代理支持：
 
-```json
+```
 sudo mkdir -p /etc/systemd/system/docker.service.d
 sudo cat <<EOF | sudo tee /etc/systemd/system/docker.service.d/proxy.conf
 [Service]

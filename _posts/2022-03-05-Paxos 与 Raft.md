@@ -41,6 +41,7 @@ tags:
 ## RAFT
 
 可以查看一个可视化的 Raft 演示动画：https://raft.github.io。
+相对于 PAXOS，RAFT 增加了一个选举过程。
 
 ### 角色
 
@@ -54,7 +55,7 @@ tags:
 
 #### Leader Election
 
-先由 Candidate 选举得到一个 leader，在执行后序的。
+先由 Candidate 选举得到一个 leader，再执行后序的 Log Replication。
 
 #### Log Replication
 
